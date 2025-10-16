@@ -13,17 +13,17 @@ import random
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 ## Train
-refbp_dict = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/微软/data_0703_days/train/tr_refbp.npy',allow_pickle=True).item()
-sigfeas_demo_dict = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/微软/data_0703_days/train/tr_demo_sigfeas.npy',allow_pickle=True).item()
-cal_dict = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/微软/data_0703_days/train/tr_cal.npy',allow_pickle=True).item()
-pp_dict = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/微软/data_0703_days/train/tr_pp.npy',allow_pickle=True).item()
+refbp_dict = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/MS/data_0703_days/train/tr_refbp.npy',allow_pickle=True).item()
+sigfeas_demo_dict = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/MS/data_0703_days/train/tr_demo_sigfeas.npy',allow_pickle=True).item()
+cal_dict = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/MS/data_0703_days/train/tr_cal.npy',allow_pickle=True).item()
+pp_dict = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/MS/data_0703_days/train/tr_pp.npy',allow_pickle=True).item()
 
 ## Test
-test_x = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/微软/data_0703_days/test/ts_demo_sigfeas.npy',allow_pickle=True)
-test_y = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/微软/data_0703_days/test/ts_refbp.npy',allow_pickle=True)
+test_x = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/MS/data_0703_days/test/ts_demo_sigfeas.npy',allow_pickle=True)
+test_y = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/MS/data_0703_days/test/ts_refbp.npy',allow_pickle=True)
 train_dict = sigfeas_demo_dict
-test_cal = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/微软/data_0703_days/test/ts_cal.npy')
-test_index = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/微软/data_0703_days/test/ts_index.npy')
+test_cal = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/MS/data_0703_days/test/ts_cal.npy')
+test_index = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/MS/data_0703_days/test/ts_index.npy')
 test_index = torch.tensor(test_index, dtype=torch.float32)
 
 # Convert data to PyTorch tensors
@@ -313,4 +313,5 @@ for epoch in tqdm(range(0, EPOCHS + 1), position=0, file=sys.stdout, desc="Train
                   "MAE: {:.4f}".format(mae_high),
                   "ME: {:.4f}".format(me_high),
                   "ME_sd: {:.4f}".format(mesd_high), )
+
 
