@@ -40,8 +40,6 @@ train_y = torch.tensor(train_y, dtype=torch.float32).to(device)
 test_x = torch.tensor(test_x, dtype=torch.float32).to(device)
 test_y = torch.tensor(test_y, dtype=torch.float32).to(device)
 test_cal = torch.tensor(test_cal, dtype=torch.float32).to(device)
-data_min = torch.min(train_x, dim=0, keepdim=True)[0]
-data_max = torch.max(train_x, dim=0, keepdim=True)[0]
 
 train_x = []
 train_y = []
@@ -62,9 +60,6 @@ train_x = torch.tensor(train_x, dtype=torch.float32).to(device)
 train_y = torch.tensor(train_y, dtype=torch.float32).to(device)
 train_cal = torch.tensor(train_cal, dtype=torch.float32).to(device)
 train_pp = torch.tensor(train_pp, dtype=torch.float32).to(device)
-
-test_x = apply_normalization(test_x, data_min, data_max)
-train_x = apply_normalization(train_x, data_min, data_max)
 
 train_x = torch.cat((train_x, train_cal), dim=1)
 test_x = torch.cat((test_x, test_cal), dim=1)
@@ -130,7 +125,6 @@ class BLSincre:
         self.incremental_input()
 
     def incremental_input(self):
-        ## 输入统一
         self.W = self.W.T
         self.pesuedoinverse = self.pesuedoinverse * (torch.tensor(self.beta) + 1)
         ## extratraindata
@@ -143,7 +137,6 @@ class BLSincre:
         DT = xdata.T @ self.pesuedoinverse
         CT = xdata.T - DT @ data
 
-        # 计算 B
         if (CT.T == 0).all():
             B = pinv(CT, self.c)
         else:
@@ -194,8 +187,7 @@ print(net.to(device))
 lossF = torch.nn.MSELoss()
 alpha = 2 ** -8
 beta = 2 ** -7
-optimizer = torch.optim.Adam(net.parameters(), lr=10**0, weight_decay=2**-12) #2
-# optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+optimizer = torch.optim.Adam(net.parameters(), lr=10**0, weight_decay=2**-12)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.90)
 i = 0
 for epoch in tqdm(range(0, EPOCHS + 1), position=0, file=sys.stdout, desc="Training progress"):
@@ -231,7 +223,6 @@ for epoch in tqdm(range(0, EPOCHS + 1), position=0, file=sys.stdout, desc="Train
     if epoch == EPOCHS:
         print("\nFinal epoch:\n")
         net.eval()
-        #### calculate feature, pseudo inverse update model
         with torch.no_grad():
             _, FeaAndEnhance = net(know_x, know_cal)
         pinv_re, new_params = ridge_regression_pseudo_inverse_reg(FeaAndEnhance, know_y, alpha, beta, train_pp)
@@ -289,7 +280,7 @@ for epoch in tqdm(range(0, EPOCHS + 1), position=0, file=sys.stdout, desc="Train
             temp_pp = torch.tensor(temp_pp, dtype=torch.float32).to(device)
             temp_x = apply_normalization(temp_x, data_min, data_max)
             temp_x = torch.cat((temp_x, temp_cal), dim=1)
-            # temp_x, _, _ = normalize_data(temp_x)
+
             net.eval()
             train_pp = torch.cat((train_pp, temp_pp), dim=0)
             BLSincre1 = BLSincre(traindata=know_x, trainlabel=know_y, extratraindata=temp_x, extratrainlabel=temp_y, # 赋予的名字不能与原始类名相同！
@@ -300,9 +291,7 @@ for epoch in tqdm(range(0, EPOCHS + 1), position=0, file=sys.stdout, desc="Train
             know_cal = torch.cat((know_cal, temp_cal), dim=0)
 
             #### Test
-            # net.train(False)
             net.eval()
-            # net.final.weight.data = W.clone().T
             _, outputs = net(test_x, test_cal)
             outputs = torch.matmul(outputs, W)
             _, outputs = compute_mean_values(outputs, test_index)
@@ -310,7 +299,6 @@ for epoch in tqdm(range(0, EPOCHS + 1), position=0, file=sys.stdout, desc="Train
             mse_low, rmse_low, nrmse_low, mae_low, me_low, mesd_low, mse_high, rmse_high, nrmse_high, mae_high, me_high, mesd_high = show_regmetric(
                 outputs, test_y)
             print("------------------- Increment {:d} -------------------".format(i))
-            # print("Normal Test: ")
             print(" -- LOW")
             print("MSE: {:.4f}".format(mse_low),
                   "RMSE: {:.4f}".format(rmse_low),
@@ -325,3 +313,4 @@ for epoch in tqdm(range(0, EPOCHS + 1), position=0, file=sys.stdout, desc="Train
                   "MAE: {:.4f}".format(mae_high),
                   "ME: {:.4f}".format(me_high),
                   "ME_sd: {:.4f}".format(mesd_high), )
+
