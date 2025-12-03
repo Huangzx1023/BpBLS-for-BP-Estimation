@@ -13,41 +13,26 @@ import random
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 ## Train
-refbp_dict = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/MS/data_0703_days/train/tr_refbp.npy',allow_pickle=True).item()
-sigfeas_demo_dict = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/MS/data_0703_days/train/tr_demo_sigfeas.npy',allow_pickle=True).item()
-cal_dict = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/MS/data_0703_days/train/tr_cal.npy',allow_pickle=True).item()
-pp_dict = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/MS/data_0703_days/train/tr_pp.npy',allow_pickle=True).item()
+bp_dict = np.load('/path/to/project/train/tr_refbp.npy', allow_pickle=True).item()
+train_dict = np.load('/path/to/project/train/tr_demo_sigfeas.npy', allow_pickle=True).item()
+cal_dict = np.load('/path/to/project/train/tr_cal.npy', allow_pickle=True).item()
+pp_dict = np.load('/path/to/project/train/tr_pp.npy', allow_pickle=True).item()
 
 ## Test
-test_x = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/MS/data_0703_days/test/ts_demo_sigfeas.npy',allow_pickle=True)
-test_y = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/MS/data_0703_days/test/ts_refbp.npy',allow_pickle=True)
-train_dict = sigfeas_demo_dict
-test_cal = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/MS/data_0703_days/test/ts_cal.npy')
-test_index = np.load('/data/GroupFile_inData/huangzixuan/Blood Pressure/MS/data_0703_days/test/ts_index.npy')
+test_x = np.load('/path/to/project/test/ts_demo_sigfeas.npy', allow_pickle=True)
+test_y = np.load('/path/to/project/test/ts_refbp.npy', allow_pickle=True)
+test_cal = np.load('/path/to/project/test/ts_cal.npy')
+test_index = np.load('/path/to/project/test/ts_index.npy')
 test_index = torch.tensor(test_index, dtype=torch.float32)
 
 # Convert data to PyTorch tensors
 train_x = []
 train_y = []
-for j in range(54):
-    train_x.append(sigfeas_demo_dict[j])
-    train_y.append(refbp_dict[j])
-train_x = np.concatenate(train_x)
-train_y = np.concatenate(train_y)
-
-train_x = torch.tensor(train_x, dtype=torch.float32).to(device)
-train_y = torch.tensor(train_y, dtype=torch.float32).to(device)
-test_x = torch.tensor(test_x, dtype=torch.float32).to(device)
-test_y = torch.tensor(test_y, dtype=torch.float32).to(device)
-test_cal = torch.tensor(test_cal, dtype=torch.float32).to(device)
-
-train_x = []
-train_y = []
 train_cal = []
 train_pp = []
 for j in range(5):
-    train_x.append(sigfeas_demo_dict[j])
-    train_y.append(refbp_dict[j])
+    train_x.append(train_dict[j])
+    train_y.append(bp_dict[j])
     train_cal.append(cal_dict[j])
     train_pp.append(pp_dict[j])
 
@@ -62,6 +47,9 @@ train_cal = torch.tensor(train_cal, dtype=torch.float32).to(device)
 train_pp = torch.tensor(train_pp, dtype=torch.float32).to(device)
 
 train_x = torch.cat((train_x, train_cal), dim=1)
+test_x = torch.tensor(test_x, dtype=torch.float32).to(device)
+test_y = torch.tensor(test_y, dtype=torch.float32).to(device)
+test_cal = torch.tensor(test_cal, dtype=torch.float32).to(device)
 test_x = torch.cat((test_x, test_cal), dim=1)
 
 def pinv(A, reg):
@@ -69,8 +57,6 @@ def pinv(A, reg):
     regularized_matrix = reg * identity_matrix + torch.matmul(A.T, A)
     regularized_inverse = torch.linalg.pinv(regularized_matrix)
     return torch.matmul(regularized_inverse, A.T)
-
-
 
 class BLS(nn.Module):
     def __init__(self, feature_nodes, feature_windows, enhancement_nodes, num_classes, normalization='batch'):
@@ -265,8 +251,8 @@ for epoch in tqdm(range(0, EPOCHS + 1), position=0, file=sys.stdout, desc="Train
                 j_range = range(22, 54)
 
             for j in j_range:
-                temp_x.append(sigfeas_demo_dict[j])
-                temp_y.append(refbp_dict[j])
+                temp_x.append(train_dict[j])
+                temp_y.append(bp_dict[j])
                 temp_cal.append(cal_dict[j])
                 temp_pp.append(pp_dict[j])
 
@@ -283,7 +269,7 @@ for epoch in tqdm(range(0, EPOCHS + 1), position=0, file=sys.stdout, desc="Train
 
             net.eval()
             train_pp = torch.cat((train_pp, temp_pp), dim=0)
-            BLSincre1 = BLSincre(traindata=know_x, trainlabel=know_y, extratraindata=temp_x, extratrainlabel=temp_y, # 赋予的名字不能与原始类名相同！
+            BLSincre1 = BLSincre(traindata=know_x, trainlabel=know_y, extratraindata=temp_x, extratrainlabel=temp_y,
                                 model=net, alpha1=alpha, pesuedoinverse=pinv_re, W=W, traincal = know_cal, extratraincal = temp_cal, beta=beta, pp=train_pp, extra_pp=temp_pp)
             W, pinv_re = BLSincre1.incremental_predict(test_x, test_y)
             know_x = torch.cat((know_x, temp_x), dim=0)
@@ -313,5 +299,6 @@ for epoch in tqdm(range(0, EPOCHS + 1), position=0, file=sys.stdout, desc="Train
                   "MAE: {:.4f}".format(mae_high),
                   "ME: {:.4f}".format(me_high),
                   "ME_sd: {:.4f}".format(mesd_high), )
+
 
 
