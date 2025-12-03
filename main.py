@@ -147,7 +147,7 @@ class BLSincre:
         W_s = W_s_old + C @ (y_s_new - A_new.T @ W_s_old)
         self.W = torch.cat((W_d, W_s), dim=1)
 
-    def incremental_predict(self, test_x, test_y):
+    def get_w(self, test_x, test_y):
         return self.W, self.pesuedoinverse
 
 def seed_everything(seed):
@@ -271,7 +271,7 @@ for epoch in tqdm(range(0, EPOCHS + 1), position=0, file=sys.stdout, desc="Train
             train_pp = torch.cat((train_pp, temp_pp), dim=0)
             BLSincre1 = BLSincre(traindata=know_x, trainlabel=know_y, extratraindata=temp_x, extratrainlabel=temp_y,
                                 model=net, alpha1=alpha, pesuedoinverse=pinv_re, W=W, traincal = know_cal, extratraincal = temp_cal, beta=beta, pp=train_pp, extra_pp=temp_pp)
-            W, pinv_re = BLSincre1.incremental_predict(test_x, test_y)
+            W, pinv_re = BLSincre1.get_w(test_x, test_y)
             know_x = torch.cat((know_x, temp_x), dim=0)
             know_y = torch.cat((know_y, temp_y), dim=0)
             know_cal = torch.cat((know_cal, temp_cal), dim=0)
@@ -299,6 +299,7 @@ for epoch in tqdm(range(0, EPOCHS + 1), position=0, file=sys.stdout, desc="Train
                   "MAE: {:.4f}".format(mae_high),
                   "ME: {:.4f}".format(me_high),
                   "ME_sd: {:.4f}".format(mesd_high), )
+
 
 
 
